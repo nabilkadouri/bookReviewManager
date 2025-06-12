@@ -161,4 +161,47 @@ public class BookService {
         System.out.println("--------------------------------------------------");
     }
 
+    public void afficherStatistiquesParGenreSimplifie() {
+        System.out.println("\n--- Statistiques Détaillées des Livres par Genre ---");
+        Map<Integer, Double> tableauIdNotesMoyennes = calculerLaMoyenneDesNotes();
+
+        Map<Genre, List<Double>> moyennesDesLivresDansChaqueGenre = this.books.stream()
+                .collect(Collectors.groupingBy(
+                        Book::getGenre,
+                        Collectors.mapping(
+                                book -> tableauIdNotesMoyennes.getOrDefault(book.getId(), 0.0),
+                                Collectors.toList()
+                        )
+                ));
+
+        for (Map.Entry<Genre, List<Double>> entry : moyennesDesLivresDansChaqueGenre.entrySet()) {
+            Genre genre = entry.getKey();
+            List<Double> moyennesDesLivres = entry.getValue();
+
+            int nombreDeLivres = moyennesDesLivres.size();
+            double sommeMoyennesAvecCritiques = moyennesDesLivres.stream()
+                    .filter(moyenne -> moyenne > 0.0)
+                    .mapToDouble(Double::doubleValue)
+                    .sum();
+
+            long livresAvecCritiquesDansCeGenre = moyennesDesLivres.stream()
+                    .filter(moyenne -> moyenne > 0.0)
+                    .count();
+
+            double moyenneGlobaleDuGenre = 0.0;
+            if (livresAvecCritiquesDansCeGenre > 0) {
+                moyenneGlobaleDuGenre = sommeMoyennesAvecCritiques / livresAvecCritiquesDansCeGenre;
+            }
+
+            System.out.println("\n--- Genre: " + genre + " ---");
+            System.out.println("  Nombre total de livres: " + nombreDeLivres);
+            if (livresAvecCritiquesDansCeGenre > 0) {
+                System.out.println("  Note moyenne globale (des livres avec critiques): " + String.format("%.2f", moyenneGlobaleDuGenre));
+            } else {
+                System.out.println("  Aucun livre avec des critiques significatives dans ce genre.");
+            }
+        }
+        System.out.println("--------------------------------------------------");
+    }
+
 }

@@ -1,10 +1,16 @@
 package com.monsite;
 
-/**
- * Hello world!
- */
+
+import com.monsite.service.BookService;
+
+
 public class App {
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        BookService book = new BookService();
+        book.afficherLivresTrieParMoyenneNotes();
+        book.afficherAuteurTrieParCritique("Frank Herbert");
+        book.rechercherMeilleursLivresParGenre();
+        book.afficherCritiquesLivresAnciens(1998);
+        book.afficherStatistiquesParGenreSimplifie();
     }
 }
