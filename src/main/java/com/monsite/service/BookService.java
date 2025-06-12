@@ -56,7 +56,7 @@ public class BookService {
         return moyennesParLivre;
     }
 
-    public void trierMoyenneNotes() {
+    public void AfficherLivrestrierParMoyenneNotes() {
         Map<Integer, Double> tableauIdNotesMoyennes = calculerLaMoyenneDesNotes();
         List<Book> tousLesLivres = this.books;
 
@@ -73,4 +73,54 @@ public class BookService {
                     " - Moyenne: " + String.format("%.2f", moyenneAffichee));
         }
     }
+
+    public void AfficherCritiqueAuteurTrie (String  nomAuteur) {
+        //Récupération des listes des livres et critiques
+        List<Review> critiques = this.reviews;
+        List<Book> livres = this.books;
+
+        //Création d'un Map (dictionnaire) clé= id /valeur = objet livre
+        Map<Integer, Book> livresParId = new HashMap<>();
+        //Boucle dans pour put l'id du livre en clé et l'objet livre en valeur
+        for (Book book: livres)  {
+            livresParId.put(book.getId(), book);
+            }
+
+        //Création d'un Arraylist pour ajouter toutes les critiques filtrées
+        List<Review> critiquesFiltres = new ArrayList<>();
+        //Boucle sur toutes les critiques qu'on a récupérés
+        for (Review critique : critiques) {
+            //Recherche de livre qui correspond à la critique en utilisant l'id du livre (qui est dans la critique)
+            Book livreAssocie = livresParId.get(critique.getId());
+            if (livreAssocie != null && livreAssocie.getAuthor().equalsIgnoreCase(nomAuteur)) {
+                //ajoute de la critique à la liste de critiques filtrées
+                critiquesFiltres.add(critique);
+            }
+        }
+
+        //Maintenant qu'on a toutes les critiques du bon auteur, on les trie !
+        //On utilise un 'Comparator' pour comparer deux critiques :
+        //on compare la date de la deuxième critique (rev2) avec celle de la première (rev1).
+        //Ça nous donne un tri décroissant, du plus récent au plus ancien.
+        critiquesFiltres.sort((rev1, rev2) -> rev2.getDate().compareTo(rev1.getDate()));
+
+        if (critiquesFiltres.isEmpty()) {
+            System.out.println("\n--- Aucune critique trouvée pour l'auteur : " + nomAuteur + " ---");
+        } else {
+            System.out.println("\n--- Critiques de l'auteur " + nomAuteur + " (triées par date décroissante) ---");
+            for (Review critique : critiquesFiltres) {
+                Book livreAssocie = livresParId.get(critique.getId());
+                String titreLivre = (livreAssocie != null) ? livreAssocie.getTitle() : "Titre inconnu";
+
+                System.out.println("  Livre: '" + titreLivre + "'");
+                System.out.println("    - Date: " + critique.getDate());
+                System.out.println("    - Pseudo: " + critique.getPseudo());
+                System.out.println("    - Note: " + critique.getNote());
+                System.out.println("    - Commentaire: '" + critique.getComment() + "'");
+                System.out.println("    --------------------");
+            }
+        }
+
+    }
+
 }
