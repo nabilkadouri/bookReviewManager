@@ -5,10 +5,8 @@ import com.monsite.model.Book;
 import com.monsite.model.Genre;
 import com.monsite.model.Review;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class BookService {
@@ -57,7 +55,7 @@ public class BookService {
         return moyennesParLivre;
     }
 
-    public void AfficherLivresTrieParMoyenneNotes() {
+    public void afficherLivresTrieParMoyenneNotes() {
         Map<Integer, Double> tableauIdNotesMoyennes = calculerLaMoyenneDesNotes();
         List<Book> tousLesLivres = this.books;
 
@@ -75,41 +73,23 @@ public class BookService {
         }
     }
 
-    public void AfficherAuteurTrieParCritique (String  nomAuteur) {
-        //Récupération des listes des livres et critiques
-        List<Review> critiques = this.reviews;
-        List<Book> livres = this.books;
+    public void afficherAuteurTrieParCritique(String nomAuteur) {
+        System.out.println("\n--- Critiques de l'auteur " + nomAuteur + " (triées par date décroissante) ---");
 
-        //Création d'un Map (dictionnaire) clé= id /valeur = objet livre
-        Map<Integer, Book> livresParId = new HashMap<>();
-        //Boucle dans pour put l'id du livre en clé et l'objet livre en valeur
-        for (Book book: livres)  {
-            livresParId.put(book.getId(), book);
-            }
+        Map<Integer, Book> livresParId = this.books.stream()
+                .collect(Collectors.toMap(Book::getId, book -> book));
+        List<Review> critiquesTrieesPourAffichage = this.reviews.stream()
+                .filter(critique -> {
+                    Book livreAssocie = livresParId.get(critique.getId());
+                    return livreAssocie != null && livreAssocie.getAuthor().equalsIgnoreCase(nomAuteur);
+                })
+                .sorted(Comparator.comparing(Review::getDate).reversed())
+                .collect(Collectors.toList());
 
-        //Création d'un Arraylist pour ajouter toutes les critiques filtrées
-        List<Review> critiquesFiltres = new ArrayList<>();
-        //Boucle sur toutes les critiques qu'on a récupérés
-        for (Review critique : critiques) {
-            //Recherche de livre qui correspond à la critique en utilisant l'id du livre (qui est dans la critique)
-            Book livreAssocie = livresParId.get(critique.getId());
-            if (livreAssocie != null && livreAssocie.getAuthor().equalsIgnoreCase(nomAuteur)) {
-                //ajoute de la critique à la liste de critiques filtrées
-                critiquesFiltres.add(critique);
-            }
-        }
-
-        //Maintenant qu'on a toutes les critiques du bon auteur, on les trie !
-        //On utilise un 'Comparator' pour comparer deux critiques :
-        //on compare la date de la deuxième critique (rev2) avec celle de la première (rev1).
-        //Ça nous donne un tri décroissant, du plus récent au plus ancien.
-        critiquesFiltres.sort((rev1, rev2) -> rev2.getDate().compareTo(rev1.getDate()));
-
-        if (critiquesFiltres.isEmpty()) {
-            System.out.println("\n--- Aucune critique trouvée pour l'auteur : " + nomAuteur + " ---");
+        if (critiquesTrieesPourAffichage.isEmpty()) {
+            System.out.println("--- Aucune critique trouvée pour l'auteur : " + nomAuteur + " ---");
         } else {
-            System.out.println("\n--- Critiques de l'auteur " + nomAuteur + " (triées par date décroissante) ---");
-            for (Review critique : critiquesFiltres) {
+            for (Review critique : critiquesTrieesPourAffichage) {
                 Book livreAssocie = livresParId.get(critique.getId());
                 String titreLivre = (livreAssocie != null) ? livreAssocie.getTitle() : "Titre inconnu";
 
@@ -121,46 +101,64 @@ public class BookService {
                 System.out.println("    --------------------");
             }
         }
-
+        System.out.println("--------------------------------------------------------------------");
     }
 
-
-
     public void rechercherMeilleursLivresParGenre() {
-        Map<Integer, Double> tableauIdNotesMoyennes = calculerLaMoyenneDesNotes();
-        Map<Genre, Book> meilleursLivresParGenre = new HashMap<>();
-        Map<Genre, Double> meilleuresMoyennesParGenre = new HashMap<>();
-
-
-        for (Book livreActuel : this.books) {
-
-            Genre genreDuLivre = livreActuel.getGenre();
-            double moyenneDuLivreActuel = tableauIdNotesMoyennes.getOrDefault(livreActuel.getId(), 0.0);
-            double meilleureMoyenneConnuePourCeGenre = meilleuresMoyennesParGenre.getOrDefault(genreDuLivre, 0.0);
-
-            if (moyenneDuLivreActuel > meilleureMoyenneConnuePourCeGenre) {
-                meilleursLivresParGenre.put(genreDuLivre, livreActuel);
-                meilleuresMoyennesParGenre.put(genreDuLivre, moyenneDuLivreActuel);
-            }
-        }
-
         System.out.println("\n--- Meilleurs Livres par Genre (basé sur la meilleure moyenne) ---");
+        Map<Integer, Double> tableauIdNotesMoyennes = calculerLaMoyenneDesNotes();
+        Map<Genre, Optional<Book>> meilleursLivresParGenreOptional = this.books.stream()
+                .collect(Collectors.groupingBy(
+                        Book::getGenre,
+                        Collectors.maxBy(Comparator.comparingDouble(book ->
+                                tableauIdNotesMoyennes.getOrDefault(book.getId(), 0.0)
+                        ))
+                ));
 
-        for (Map.Entry<Genre, Book> entry : meilleursLivresParGenre.entrySet()) {
+        for (Map.Entry<Genre, Optional<Book>> entry : meilleursLivresParGenreOptional.entrySet()) {
             Genre genre = entry.getKey();
-            Book meilleurLivre = entry.getValue();
-            double moyenneAffichee = meilleuresMoyennesParGenre.get(genre);
+            Optional<Book> meilleurLivreOptional = entry.getValue();
 
             System.out.println("\n--- Genre : " + genre + " ---");
-            if (meilleurLivre != null && moyenneAffichee > 0.0) {
+
+
+            if (meilleurLivreOptional.isPresent()) {
+                Book meilleurLivre = meilleurLivreOptional.get();
+
+                double moyenneAffichee = tableauIdNotesMoyennes.getOrDefault(meilleurLivre.getId(), 0.0);
+
                 System.out.println("  Titre: " + meilleurLivre.getTitle());
                 System.out.println("  Auteur: " + meilleurLivre.getAuthor());
                 System.out.println("  Moyenne des notes: " + String.format("%.2f", moyenneAffichee));
             } else {
-                System.out.println("  Aucun livre avec des critiques significatives trouvé pour ce genre.");
+                System.out.println("  Aucun livre trouvé avec des critiques pour ce genre.");
             }
         }
-        System.out.println("------------------------------------------------------------------");
+        System.out.println("--------------------------------------------------");
+    }
+
+    public void afficherCritiquesLivresAnciens(int anneeLimite) {
+        System.out.println("\n--- Critiques des livres publiés avant " + anneeLimite + " ---");
+
+        Map<Integer, List<Review>> critiquesParIdLivre = filtrerCritiqueParIdLivre();
+        this.books.stream()
+                .filter(book -> book.getAnneePublication() < anneeLimite)
+                .forEach(book -> {
+                    System.out.println("\nLivre: " + book.getTitle() + " (Auteur: " + book.getAuthor() + ", Année: " + book.getAnneePublication() + ")");
+
+                    List<Review> critiquesDuLivre = critiquesParIdLivre.getOrDefault(book.getId(), new ArrayList<>());
+
+                    if (!critiquesDuLivre.isEmpty()) {
+                        System.out.println("  Critiques :");
+                        critiquesDuLivre.forEach(review -> {
+                            System.out.println("    - Pseudo: " + review.getPseudo() + ", Note: " + review.getNote() + ", Commentaire: '" + review.getComment() + "'");
+                        });
+                    } else {
+                        System.out.println("  Aucune critique pour ce livre.");
+                    }
+                });
+
+        System.out.println("--------------------------------------------------");
     }
 
 }
