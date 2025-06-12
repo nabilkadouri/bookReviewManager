@@ -4,17 +4,17 @@ import com.monsite.data.FakeDatabase;
 import com.monsite.model.Book;
 import com.monsite.model.Review;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 public class BookService {
 
     List<Book> books = new ArrayList<>(FakeDatabase.getBooks());
     List<Review> reviews = FakeDatabase.getReviews();
 
-
-    //Pour chaque livre, filtrez les critiques qui lui correspondent (en utilisant l'ID du livre).
     public Map<Integer, List<Review>> filtrerCritiqueParIdLivre() {
         Map<Integer, List<Review>> critiqueParIdLivre = new HashMap<>();
         for (Review review : reviews) {
@@ -56,7 +56,6 @@ public class BookService {
         return moyennesParLivre;
     }
 
-
     public void trierMoyenneNotes() {
         Map<Integer, Double> tableauIdNotesMoyennes = calculerLaMoyenneDesNotes();
         List<Book> tousLesLivres = this.books;
@@ -69,7 +68,6 @@ public class BookService {
 
         System.out.println("\n--- Liste des livres triés par moyenne des notes (du plus haut au plus bas) ---");
         for (Book book : tousLesLivres) {
-            // Récupérez la moyenne pour l'affichage.
             double moyenneAffichee = tableauIdNotesMoyennes.getOrDefault(book.getId(), 0.0);
             System.out.println("  " + book.getTitle() + " (Auteur: " + book.getAuthor() + ")" +
                     " - Moyenne: " + String.format("%.2f", moyenneAffichee));
