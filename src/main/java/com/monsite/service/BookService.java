@@ -2,6 +2,7 @@ package com.monsite.service;
 
 import com.monsite.data.FakeDatabase;
 import com.monsite.model.Book;
+import com.monsite.model.Genre;
 import com.monsite.model.Review;
 
 import java.util.ArrayList;
@@ -56,7 +57,7 @@ public class BookService {
         return moyennesParLivre;
     }
 
-    public void AfficherLivrestrierParMoyenneNotes() {
+    public void AfficherLivresTrieParMoyenneNotes() {
         Map<Integer, Double> tableauIdNotesMoyennes = calculerLaMoyenneDesNotes();
         List<Book> tousLesLivres = this.books;
 
@@ -74,7 +75,7 @@ public class BookService {
         }
     }
 
-    public void AfficherCritiqueAuteurTrie (String  nomAuteur) {
+    public void AfficherAuteurTrieParCritique (String  nomAuteur) {
         //Récupération des listes des livres et critiques
         List<Review> critiques = this.reviews;
         List<Book> livres = this.books;
@@ -121,6 +122,45 @@ public class BookService {
             }
         }
 
+    }
+
+
+
+    public void rechercherMeilleursLivresParGenre() {
+        Map<Integer, Double> tableauIdNotesMoyennes = calculerLaMoyenneDesNotes();
+        Map<Genre, Book> meilleursLivresParGenre = new HashMap<>();
+        Map<Genre, Double> meilleuresMoyennesParGenre = new HashMap<>();
+
+
+        for (Book livreActuel : this.books) {
+
+            Genre genreDuLivre = livreActuel.getGenre();
+            double moyenneDuLivreActuel = tableauIdNotesMoyennes.getOrDefault(livreActuel.getId(), 0.0);
+            double meilleureMoyenneConnuePourCeGenre = meilleuresMoyennesParGenre.getOrDefault(genreDuLivre, 0.0);
+
+            if (moyenneDuLivreActuel > meilleureMoyenneConnuePourCeGenre) {
+                meilleursLivresParGenre.put(genreDuLivre, livreActuel);
+                meilleuresMoyennesParGenre.put(genreDuLivre, moyenneDuLivreActuel);
+            }
+        }
+
+        System.out.println("\n--- Meilleurs Livres par Genre (basé sur la meilleure moyenne) ---");
+
+        for (Map.Entry<Genre, Book> entry : meilleursLivresParGenre.entrySet()) {
+            Genre genre = entry.getKey();
+            Book meilleurLivre = entry.getValue();
+            double moyenneAffichee = meilleuresMoyennesParGenre.get(genre);
+
+            System.out.println("\n--- Genre : " + genre + " ---");
+            if (meilleurLivre != null && moyenneAffichee > 0.0) {
+                System.out.println("  Titre: " + meilleurLivre.getTitle());
+                System.out.println("  Auteur: " + meilleurLivre.getAuthor());
+                System.out.println("  Moyenne des notes: " + String.format("%.2f", moyenneAffichee));
+            } else {
+                System.out.println("  Aucun livre avec des critiques significatives trouvé pour ce genre.");
+            }
+        }
+        System.out.println("------------------------------------------------------------------");
     }
 
 }
